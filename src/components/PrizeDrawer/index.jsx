@@ -7,36 +7,56 @@ const SettingsModal = ({ isOpen, onClose, onConfirm }) => {
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        backgroundColor: "white",
-        padding: "20px",
-        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-        zIndex: 1000,
-      }}
-    >
-      <h2>抽奖设置</h2>
-      <textarea
-        rows="10"
-        cols="50"
-        value={inputJson}
-        onChange={(e) => setInputJson(e.target.value)}
-        placeholder="在此输入奖品JSON数据"
+    <>
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0, 0, 0, 0.4)",
+          zIndex: 999,
+        }}
       />
-      <br />
-      <br />
-      <button
-        onClick={() => onConfirm(inputJson)}
-        style={{ marginRight: "10px" }}
-      >
-        确认
-      </button>
-      <button onClick={onClose}>关闭</button>
-    </div>
+      <div
+        className="card"
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          padding: "1.5rem",
+          backgroundColor: "white",
+          zIndex: 1000,
+        }}>
+        <div
+          style={{
+            fontSize: "1.5rem",
+            fontWeight: "bold",
+          }}>
+          抽奖设置
+        </div>
+        <div className="gap" />
+        <textarea
+          rows="10"
+          cols="50"
+          value={inputJson}
+          onChange={(e) => setInputJson(e.target.value)}
+          placeholder="在此输入奖品JSON数据"
+        />
+        <div className="gap" />
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            justifyContent: "center",
+          }}>
+          <button onClick={() => onConfirm(inputJson)}>确认</button>
+          <button onClick={onClose}>取消</button>
+        </div>
+      </div>
+    </>
   );
 };
 
@@ -44,6 +64,7 @@ const PrizeDrawer = () => {
   const [prizes, setPrizes] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [lastPrize, setLastPrize] = useState("");
+  const [isCoolingDown, setIsCoolingDown] = useState(false); // 新增冷却状态
 
   // 打开弹窗
   const openModal = () => setIsModalOpen(true);
@@ -89,7 +110,8 @@ const PrizeDrawer = () => {
       .then(() => {
         setPrizes(updatedPrizes);
         setLastPrize(prizeName);
-        alert(`恭喜抽中：${prizeName}！剩余数量：${updatedPrizes[prizeName]}`);
+        setIsCoolingDown(true); // 开始冷却
+        setTimeout(() => setIsCoolingDown(false), 2000);
       })
       .catch((err) => {
         console.error("无法写入剪贴板:", err);
@@ -101,39 +123,41 @@ const PrizeDrawer = () => {
     <div
       style={{
         display: "flex",
+        gap: "1rem",
         flexDirection: "column",
-        alignItems: "center",
-        padding: "20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h1>抽奖系统</h1>
-
-      {/* 主页面按钮 */}
-      <button onClick={openModal} style={{ marginBottom: "20px" }}>
+        minWidth: "600px",
+      }}>
+      <button
+        style={{
+          alignSelf: "flex-start",
+        }}
+        onClick={openModal}>
         设置奖品数据
       </button>
 
-      <div>
-        <h3>上一次抽中的奖品：</h3>
-        <p
+      <div className="card">
+        <div>上一次抽中的奖品：</div>
+        <div
           style={{
-            fontSize: "50px",
+            display: "flex",
+            justifyContent: "center",
+            margin: "1rem",
+            fontSize: "3.5rem",
             fontWeight: "bold",
-          }}
-        >
+          }}>
           {lastPrize || "无"}
-        </p>
+        </div>
       </div>
-      <button onClick={handleDraw} disabled={!prizes}>
-        抽奖
+      <button
+        style={{ alignSelf: "center" }}
+        onClick={handleDraw}
+        disabled={!prizes || isCoolingDown}>
+        {isCoolingDown ? "冷却中..." : "抽奖"}
       </button>
 
-      {/* 显示当前奖品数据 */}
-      <h3>当前奖品数据：</h3>
+      <div>当前奖品数据：</div>
       <pre>{JSON.stringify(prizes, null, 2)}</pre>
 
-      {/* 弹窗组件 */}
       <SettingsModal
         isOpen={isModalOpen}
         onClose={closeModal}
