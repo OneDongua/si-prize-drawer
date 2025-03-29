@@ -64,7 +64,9 @@ const PrizeDrawer = () => {
   const [prizes, setPrizes] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [lastPrize, setLastPrize] = useState("");
-  const [isCoolingDown, setIsCoolingDown] = useState(false); // 新增冷却状态
+
+  const [isCoolingDown, setIsCoolingDown] = useState(false); // 冷却状态
+  const [tempPrize, setTempPrize] = useState(""); // 临时奖品状态
 
   // 打开弹窗
   const openModal = () => setIsModalOpen(true);
@@ -99,24 +101,40 @@ const PrizeDrawer = () => {
       return;
     }
 
+    setIsCoolingDown(true); // 开始冷却
+
+    // 随机变换临时奖品
+    const intervalId = setInterval(() => {
+      const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+      const [randomPrizeName] = availablePrizes[randomIndex];
+      setTempPrize(randomPrizeName);
+    }, 100);
+
+    // 最终确定奖品
     const randomIndex = Math.floor(Math.random() * availablePrizes.length);
     const [prizeName, prizeCount] = availablePrizes[randomIndex];
 
-    const updatedPrizes = { ...prizes };
-    updatedPrizes[prizeName] -= 1;
+    setTimeout(() => {
+      clearInterval(intervalId); // 停止随机变换
 
-    navigator.clipboard
-      .writeText(JSON.stringify(updatedPrizes, null, 2))
-      .then(() => {
-        setPrizes(updatedPrizes);
-        setLastPrize(prizeName);
-        setIsCoolingDown(true); // 开始冷却
-        setTimeout(() => setIsCoolingDown(false), 2000);
-      })
-      .catch((err) => {
-        console.error("无法写入剪贴板:", err);
-        alert("写入剪贴板失败，请检查权限！");
-      });
+      const updatedPrizes = { ...prizes };
+      updatedPrizes[prizeName] -= 1;
+      setPrizes(updatedPrizes);
+      //alert(`恭喜抽中：${prizeName}！剩余数量：${updatedPrizes[prizeName]}`);
+
+      setLastPrize(prizeName); // 更新最终奖品
+      setTempPrize(""); // 清空临时奖品
+      setTimeout(() => {
+        setIsCoolingDown(false); // 结束冷却
+      }, 200);
+
+      navigator.clipboard
+        .writeText(JSON.stringify(updatedPrizes, null, 2))
+        .catch((err) => {
+          console.error("无法写入剪贴板:", err);
+          alert("写入剪贴板失败，请检查权限！");
+        });
+    }, 2000);
   };
 
   return (
@@ -145,7 +163,7 @@ const PrizeDrawer = () => {
             fontSize: "3.5rem",
             fontWeight: "bold",
           }}>
-          {lastPrize || "无"}
+          {isCoolingDown ? tempPrize || lastPrize : lastPrize || "无"}
         </div>
       </div>
       <button
