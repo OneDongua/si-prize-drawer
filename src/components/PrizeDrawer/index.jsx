@@ -1,72 +1,42 @@
-import React, { useState } from "react";
-
-// 新增弹窗组件
-const SettingsModal = ({ isOpen, onClose, onConfirm }) => {
-  const [inputJson, setInputJson] = useState("");
-
-  if (!isOpen) return null;
-
-  return (
-    <>
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          backgroundColor: "rgba(0, 0, 0, 0.4)",
-          zIndex: 999,
-        }}
-      />
-      <div
-        className="card"
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          padding: "1.5rem",
-          backgroundColor: "white",
-          zIndex: 1000,
-        }}>
-        <div
-          style={{
-            fontSize: "1.5rem",
-            fontWeight: "bold",
-          }}>
-          抽奖设置
-        </div>
-        <div className="gap" />
-        <textarea
-          rows="10"
-          cols="50"
-          value={inputJson}
-          onChange={(e) => setInputJson(e.target.value)}
-          placeholder="在此输入奖品JSON数据"
-        />
-        <div className="gap" />
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            justifyContent: "center",
-          }}>
-          <button onClick={() => onConfirm(inputJson)}>确认</button>
-          <button onClick={onClose}>取消</button>
-        </div>
-      </div>
-    </>
-  );
-};
+import React, { useState, useEffect } from "react";
+import Switch from "../Switch";
 
 const PrizeDrawer = () => {
   const [prizes, setPrizes] = useState(null);
+  const [initialPrizes, setInitialPrizes] = useState(null); // 保存初始数据
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [lastPrize, setLastPrize] = useState("");
 
   const [isCoolingDown, setIsCoolingDown] = useState(false); // 冷却状态
-  const [tempPrize, setTempPrize] = useState(""); // 临时奖品状态
+  const [tempPrize, setTempPrize] = useState("无"); // 临时奖品状态
+  const [clipboardEnabled, setClipboardEnabled] = useState(false); // 是否启用剪贴板
+
+  // 加载本地存储中的奖品数据
+  useEffect(() => {
+    const storedPrizes = localStorage.getItem("prizes");
+    if (storedPrizes) {
+      try {
+        const parsedPrizes = JSON.parse(storedPrizes);
+        setPrizes(parsedPrizes);
+        setInitialPrizes(parsedPrizes);
+      } catch (error) {
+        console.error("无法解析本地存储中的奖品数据:", error);
+      }
+    }
+  }, []);
+
+  // 重置奖品数据
+  const handleReset = () => {
+    if (window.confirm("确定要重置奖品数据吗？")) {
+      if (initialPrizes) {
+        setPrizes(initialPrizes);
+        localStorage.setItem("prizes", JSON.stringify(initialPrizes)); // 更新本地存储
+        alert("奖品数据已重置！");
+      } else {
+        alert("没有可用的初始数据！");
+      }
+    }
+  };
 
   // 打开弹窗
   const openModal = () => setIsModalOpen(true);
@@ -79,6 +49,8 @@ const PrizeDrawer = () => {
     try {
       const parsedPrizes = JSON.parse(inputJson);
       setPrizes(parsedPrizes);
+      setInitialPrizes(parsedPrizes);
+      localStorage.setItem("prizes", JSON.stringify(parsedPrizes)); // 存储到本地
       alert("奖品数据已成功加载！");
       closeModal();
     } catch (error) {
@@ -121,6 +93,7 @@ const PrizeDrawer = () => {
       updatedPrizes[prizeName] -= 1;
       setPrizes(updatedPrizes);
       //alert(`恭喜抽中：${prizeName}！剩余数量：${updatedPrizes[prizeName]}`);
+      localStorage.setItem("prizes", JSON.stringify(updatedPrizes)); // 更新本地存储
 
       setLastPrize(prizeName); // 更新最终奖品
       setTempPrize(""); // 清空临时奖品
@@ -128,30 +101,34 @@ const PrizeDrawer = () => {
         setIsCoolingDown(false); // 结束冷却
       }, 200);
 
-      navigator.clipboard
-        .writeText(JSON.stringify(updatedPrizes, null, 2))
-        .catch((err) => {
-          console.error("无法写入剪贴板:", err);
-          alert("写入剪贴板失败，请检查权限！");
-        });
+      if (clipboardEnabled) {
+        navigator.clipboard
+          .writeText(JSON.stringify(updatedPrizes, null, 2))
+          .catch((err) => {
+            console.error("无法写入剪贴板:", err);
+            alert("写入剪贴板失败，请检查权限！");
+          });
+      }
     }, 2000);
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: "1rem",
-        flexDirection: "column",
-        minWidth: "600px",
-      }}>
-      <button
-        style={{
-          alignSelf: "flex-start",
-        }}
-        onClick={openModal}>
-        设置奖品数据
-      </button>
+    <div className="content">
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <button
+          style={{
+            alignSelf: "flex-start",
+          }}
+          onClick={openModal}>
+          设置奖品数据
+        </button>
+        <button onClick={handleReset}>重置</button>
+        写入剪贴板
+        <Switch
+          checked={clipboardEnabled}
+          onChange={() => setClipboardEnabled(!clipboardEnabled)}
+        />
+      </div>
 
       <div className="card">
         <div>上一次抽中的奖品：</div>
@@ -182,6 +159,84 @@ const PrizeDrawer = () => {
         onConfirm={handleConfirm}
       />
     </div>
+  );
+};
+
+// 弹窗组件
+const SettingsModal = ({ isOpen, onClose, onConfirm }) => {
+  const [inputJson, setInputJson] = useState("");
+  const defaultJson = `{
+    "奶酪": 16,
+    "海豹": 4,
+    "玻璃": 31,
+    "Doc": 3,
+    "玫瑰花": 1,
+    "螺丝盒子": 2,
+    "起爆器": 1,
+    "萝卜网": 2,
+    "龙虾": 2,
+    "MC模型": 5,
+    "CS": 1,
+    "立牌": 11,
+    "挂件": 20,
+    "解压玩具": 3,
+    "骷髅": 1
+  }`;
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0, 0, 0, 0.4)",
+          zIndex: 999,
+        }}
+      />
+      <div
+        className="card"
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          padding: "1.5rem",
+          backgroundColor: "white",
+          zIndex: 1000,
+        }}>
+        <div
+          style={{
+            fontSize: "1.5rem",
+            fontWeight: "bold",
+          }}>
+          抽奖设置
+        </div>
+        <div className="gap" />
+        <textarea
+          rows="16"
+          cols="40"
+          value={inputJson}
+          onChange={(e) => setInputJson(e.target.value)}
+          placeholder="在此输入奖品JSON数据"
+        />
+        <div className="gap" />
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            justifyContent: "center",
+          }}>
+          <button onClick={() => onConfirm(inputJson)}>确认</button>
+          <button onClick={onClose}>取消</button>
+          <button onClick={() => setInputJson(defaultJson)}>加载默认数据</button>
+        </div>
+      </div>
+    </>
   );
 };
 

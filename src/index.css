@@ -5,7 +5,7 @@
 }
 
 button {
-  padding: 0.5rem;
+  padding: 0.5rem 0.8rem;
   border: 0px;
   background-color: #2196f3;
   color: white;
@@ -24,10 +24,6 @@ button:disabled {
   cursor: not-allowed;
 }
 
-h1 {
-  font-size: 2.5rem;
-}
-
 .gap {
   margin: 1rem;
 }
@@ -42,4 +38,17 @@ body {
 
 pre {
   font-family: monospace;
+}
+
+.content {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+  width: 600px;
+}
+
+@media (max-width: 640px) {
+  .content {
+    width: 100%;
+  }
 }
