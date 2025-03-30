@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import Switch from "../Switch";
+import styles from "./index.module.css";
 
 const PrizeDrawer = () => {
   const [prizes, setPrizes] = useState(null);
-  const [initialPrizes, setInitialPrizes] = useState(null); // 保存初始数据
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [lastPrize, setLastPrize] = useState("");
-
+  const [initialPrizes, setInitialPrizes] = useState(null); // 保存初始数据
   const [isCoolingDown, setIsCoolingDown] = useState(false); // 冷却状态
   const [tempPrize, setTempPrize] = useState("无"); // 临时奖品状态
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
   const [clipboardEnabled, setClipboardEnabled] = useState(false); // 是否启用剪贴板
 
   // 加载本地存储中的奖品数据
@@ -114,20 +116,63 @@ const PrizeDrawer = () => {
 
   return (
     <div className="content">
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <button
-          style={{
-            alignSelf: "flex-start",
-          }}
-          onClick={openModal}>
-          设置奖品数据
-        </button>
-        <button onClick={handleReset}>重置</button>
-        写入剪贴板
-        <Switch
-          checked={clipboardEnabled}
-          onChange={() => setClipboardEnabled(!clipboardEnabled)}
-        />
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div
+          style={{ alignSelf: "flex-start" }}
+          className={styles.unfoldable}
+          onClick={() => setIsConfigCollapsed(!isConfigCollapsed)}>
+          {isConfigCollapsed ? (
+            <>
+              <svg
+                height="24px"
+                viewBox="0 -960 960 960"
+                width="24px"
+                fill="#1f1f1f">
+                <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
+              </svg>
+              展开设置
+            </>
+          ) : (
+            <>
+              <svg
+                height="24px"
+                viewBox="0 -960 960 960"
+                width="24px"
+                fill="#1f1f1f">
+                <path d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z" />
+              </svg>
+              折叠
+            </>
+          )}
+        </div>
+        <div
+          className={`
+            ${styles["collapse-content"]} ${
+            isConfigCollapsed ? styles.collapsed : styles.expanded
+          }
+          `}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginTop: "0.5rem",
+            }}>
+            <button
+              style={{
+                alignSelf: "flex-start",
+              }}
+              onClick={openModal}>
+              设置奖品数据
+            </button>
+            <button onClick={handleReset}>重置</button>
+            写入剪贴板
+            <Switch
+              checked={clipboardEnabled}
+              onChange={() => setClipboardEnabled(!clipboardEnabled)}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="card">
@@ -150,8 +195,10 @@ const PrizeDrawer = () => {
         {isCoolingDown ? "冷却中..." : "抽奖"}
       </button>
 
-      <div>当前奖品数据：</div>
-      <pre>{JSON.stringify(prizes, null, 2)}</pre>
+      <div>
+        <div>当前奖品数据：</div>
+        <pre>{JSON.stringify(prizes, null, 2)}</pre>
+      </div>
 
       <SettingsModal
         isOpen={isModalOpen}
@@ -233,7 +280,9 @@ const SettingsModal = ({ isOpen, onClose, onConfirm }) => {
           }}>
           <button onClick={() => onConfirm(inputJson)}>确认</button>
           <button onClick={onClose}>取消</button>
-          <button onClick={() => setInputJson(defaultJson)}>加载默认数据</button>
+          <button onClick={() => setInputJson(defaultJson)}>
+            加载默认数据
+          </button>
         </div>
       </div>
     </>

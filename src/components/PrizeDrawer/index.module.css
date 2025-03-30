@@ -1,0 +1,27 @@
+.unfoldable {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 8px;
+  user-select: none;
+  transition: background-color 0.3s ease; /* 添加背景颜色过渡 */
+}
+
+.unfoldable:hover {
+  cursor: pointer;
+  background-color: #00000020;
+}
+
+/* 添加折叠内容的动画 */
+.collapse-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.collapse-content.collapsed {
+  max-height: 0;
+}
+
+.collapse-content.expanded {
+  max-height: 48px;
+}
