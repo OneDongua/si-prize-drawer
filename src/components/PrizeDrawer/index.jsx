@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import Switch from "../Switch";
 import styles from "./index.module.css";
+import Input from "../Input";
 
 const PrizeDrawer = () => {
   const [prizes, setPrizes] = useState(null);
   const [lastPrize, setLastPrize] = useState("");
   const [initialPrizes, setInitialPrizes] = useState(null); // 保存初始数据
   const [isCoolingDown, setIsCoolingDown] = useState(false); // 冷却状态
+  const [coolingTime, setCoolingTime] = useState(); // 冷却时长
   const [tempPrize, setTempPrize] = useState("无"); // 临时奖品状态
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,6 +27,11 @@ const PrizeDrawer = () => {
         console.error("无法解析本地存储中的奖品数据:", error);
       }
     }
+
+    const mCollapsed = localStorage.getItem("collapsed");
+    if (mCollapsed !== null) {
+      setIsConfigCollapsed(JSON.parse(mCollapsed));
+    }
   }, []);
 
   // 重置奖品数据
@@ -38,6 +45,12 @@ const PrizeDrawer = () => {
         alert("没有可用的初始数据！");
       }
     }
+  };
+
+  const toggleConfigCollapsed = () => {
+    const newCollapsedState = !isConfigCollapsed;
+    setIsConfigCollapsed(newCollapsedState);
+    localStorage.setItem("collapsed", JSON.stringify(newCollapsedState));
   };
 
   // 打开弹窗
@@ -77,6 +90,14 @@ const PrizeDrawer = () => {
 
     setIsCoolingDown(true); // 开始冷却
 
+    // 创建加权列表
+    const weightedList = [];
+    for (const [prizeName, prizeCount] of availablePrizes) {
+      for (let i = 0; i < prizeCount; i++) {
+        weightedList.push(prizeName);
+      }
+    }
+
     // 随机变换临时奖品
     const intervalId = setInterval(() => {
       const randomIndex = Math.floor(Math.random() * availablePrizes.length);
@@ -84,20 +105,20 @@ const PrizeDrawer = () => {
       setTempPrize(randomPrizeName);
     }, 100);
 
-    // 最终确定奖品
-    const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-    const [prizeName, prizeCount] = availablePrizes[randomIndex];
+    // 最终确定奖品（从加权列表中随机抽取）
+    const randomIndex = Math.floor(Math.random() * weightedList.length);
+    const selectedPrize = weightedList[randomIndex];
 
     setTimeout(() => {
       clearInterval(intervalId); // 停止随机变换
 
       const updatedPrizes = { ...prizes };
-      updatedPrizes[prizeName] -= 1;
+      updatedPrizes[selectedPrize] -= 1;
       setPrizes(updatedPrizes);
       //alert(`恭喜抽中：${prizeName}！剩余数量：${updatedPrizes[prizeName]}`);
       localStorage.setItem("prizes", JSON.stringify(updatedPrizes)); // 更新本地存储
 
-      setLastPrize(prizeName); // 更新最终奖品
+      setLastPrize(selectedPrize); // 更新最终奖品
       setTempPrize(""); // 清空临时奖品
       setTimeout(() => {
         setIsCoolingDown(false); // 结束冷却
@@ -111,7 +132,7 @@ const PrizeDrawer = () => {
             alert("写入剪贴板失败，请检查权限！");
           });
       }
-    }, 2000);
+    }, coolingTime || 2000);
   };
 
   return (
@@ -120,7 +141,7 @@ const PrizeDrawer = () => {
         <div
           style={{ alignSelf: "flex-start" }}
           className={styles.unfoldable}
-          onClick={() => setIsConfigCollapsed(!isConfigCollapsed)}>
+          onClick={toggleConfigCollapsed}>
           {isConfigCollapsed ? (
             <>
               <svg
@@ -149,29 +170,22 @@ const PrizeDrawer = () => {
           className={`
             ${styles["collapse-content"]} ${
             isConfigCollapsed ? styles.collapsed : styles.expanded
-          }
-          `}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginTop: "0.5rem",
-            }}>
-            <button
-              style={{
-                alignSelf: "flex-start",
-              }}
-              onClick={openModal}>
-              设置奖品数据
-            </button>
-            <button onClick={handleReset}>重置</button>
+          }`}>
+          <button onClick={openModal}>设置奖品数据</button>
+          <button onClick={handleReset}>重置</button>
+          <div>
             写入剪贴板
             <Switch
               checked={clipboardEnabled}
               onChange={() => setClipboardEnabled(!clipboardEnabled)}
             />
           </div>
+          <Input
+            type="number"
+            label="冷却时长(毫秒)"
+            value={coolingTime}
+            onChange={(e) => setCoolingTime(parseInt(e.target.value))}
+          />
         </div>
       </div>
 
