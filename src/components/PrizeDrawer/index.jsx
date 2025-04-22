@@ -227,21 +227,22 @@ const PrizeDrawer = () => {
 const SettingsModal = ({ isOpen, onClose, onConfirm }) => {
   const [inputJson, setInputJson] = useState("");
   const defaultJson = `{
-    "奶酪": 16,
-    "海豹": 4,
-    "玻璃": 31,
-    "Doc": 3,
-    "玫瑰花": 1,
-    "螺丝盒子": 2,
+    "奶酪哨子": 11,
+    "海豹": 3,
+    "玻璃透镜": 32,
+    "Word文档": 3,
+    "玫瑰花": 2,
+    "螺丝": 2,
     "起爆器": 1,
-    "萝卜网": 2,
+    "萝卜网": 1,
     "龙虾": 2,
     "MC模型": 5,
-    "CS": 1,
-    "立牌": 11,
-    "挂件": 20,
-    "解压玩具": 3,
-    "骷髅": 1
+    "CS蝴蝶刀": 1,
+    "立牌": 12,
+    "挂件": 23,
+    "解压玩具": 5,
+    "骷髅": 1,
+    "谢谢参与": 50
   }`;
 
   if (!isOpen) return null;
